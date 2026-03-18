@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>عيد الفطر المبارك</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0015;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      color: #fff;
+    }
+
+    /* ── Loader ── */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: #0a0015;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      transition: opacity .6s;
+    }
+    #loader.hidden { opacity: 0; pointer-events: none; }
+
+    .spinner {
+      width: 56px; height: 56px;
+      border: 5px solid rgba(255,215,0,.2);
+      border-top-color: gold;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .load-txt {
+      margin-top: 18px;
+      font-size: 1.1rem;
+      color: gold;
+      letter-spacing: .05em;
+    }
+
+    /* ── Canvas ── */
+    #c {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Top greeting ── */
+    #topGreet {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      text-align: center;
+      padding: 22px 16px 14px;
+      background: linear-gradient(to bottom, rgba(10,0,21,.85) 70%, transparent);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .greet-main {
+      font-size: clamp(1.5rem, 5vw, 2.8rem);
+      font-weight: 700;
+      color: gold;
+      text-shadow: 0 0 18px rgba(255,215,0,.7);
+      letter-spacing: .03em;
+    }
+    .greet-sub {
+      margin-top: 8px;
+      font-size: clamp(.85rem, 2.5vw, 1.15rem);
+      color: #f0e6ff;
+      opacity: .92;
+    }
+    .greet-from {
+      margin-top: 6px;
+      font-size: clamp(.75rem, 2vw, .95rem);
+      color: #c9b8e8;
+      opacity: .8;
+    }
+
+    /* ── Bottom HUD ── */
+    #hud {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 14px 16px 20px;
+      background: linear-gradient(to top, rgba(10,0,21,.85) 70%, transparent);
+      z-index: 10;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .ctrl-btn {
+      padding: 9px 18px;
+      border-radius: 30px;
+      border: 2px solid rgba(255,215,0,.45);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+      font-size: clamp(.8rem, 2.2vw, .95rem);
+      cursor: pointer;
+      transition: background .25s, border-color .25s, transform .15s;
+      backdrop-filter: blur(6px);
+    }
+    .ctrl-btn:hover { transform: translateY(-2px); background: rgba(255,215,0,.15); }
+    .ctrl-btn.on  { background: rgba(255,215,0,.22); border-color: gold; }
+    .ctrl-btn.off { opacity: .7; }
+  </style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="load-txt">جاري التحميل…</div>
+</div>
+
+<!-- TOP GREETING (always visible, on top) -->
+<div id="topGreet">
+  <div class="greet-main">🌙 عيد الفطر المبارك 🌙</div>
+  <div class="greet-sub">كل عام وأنتم بخير وعافية &nbsp;✨&nbsp; تقبّل الله منا ومنكم صالح الأعمال</div>
+  <div class="greet-from">— عبدالله العديني</div>
+</div>
+
+<!-- CANVAS -->
+<canvas id="c"></canvas>
+
+<!-- BOTTOM CONTROLS -->
+<div id="hud">
+  <div class="controls">
+    <button class="ctrl-btn off" id="btnFire"   onclick="toggleFireworks()">🎆 ألعاب نارية</button>
+    <button class="ctrl-btn off" id="btnStars"  onclick="toggleStars()">✨ تلألؤ النجوم</button>
+    <button class="ctrl-btn on"  id="btnLights" onclick="toggleLights()">🕌 إضاءة المسجد</button>
+    <button class="ctrl-btn off" id="btnAll"    onclick="launchAll()">🎉 احتفال كامل</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════
+   Eid Al-Fitr  –  3-D Greeting  (Three.js r128)
+   ═══════════════════════════════════════════════ */
+
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
+
+/* ── Renderer ── */
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.shadowMap.enabled = true;
+
+/* ── Scene / Camera ── */
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0015);
+scene.fog = new THREE.FogExp2(0x0a0015, 0.018);
+
+const camera = new THREE.PerspectiveCamera(55, W() / H(), 0.1, 200);
+camera.position.set(0, 6, 22);
+camera.lookAt(0, 4, 0);
+
+/* ── Stars (background) ── */
+const starGeo = new THREE.BufferGeometry();
+const starCount = 1800;
+const starPos = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount * 3; i++) starPos[i] = (Math.random() - .5) * 180;
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: .18, sizeAttenuation: true });
+const stars = new THREE.Points(starGeo, starMat);
+scene.add(stars);
+
+/* ── Ground ── */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 80),
+  new THREE.MeshStandardMaterial({ color: 0x1a0a2e, roughness: .9 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ── Ambient + Moon light ── */
+const ambient = new THREE.AmbientLight(0x1a0a3a, 1.2);
+scene.add(ambient);
+
+const moonLight = new THREE.DirectionalLight(0xaac8ff, .6);
+moonLight.position.set(-10, 20, 10);
+moonLight.castShadow = true;
+scene.add(moonLight);
+
+/* ── Mosque warm lights (toggleable) ── */
+const mosqueLight1 = new THREE.PointLight(0xffd700, 0, 12);
+mosqueLight1.position.set(0, 3, 0);
+scene.add(mosqueLight1);
+const mosqueLight2 = new THREE.PointLight(0xff9900, 0, 8);
+mosqueLight2.position.set(-3, 2, 2);
+scene.add(mosqueLight2);
+const mosqueLight3 = new THREE.PointLight(0xff9900, 0, 8);
+mosqueLight3.position.set(3, 2, 2);
+scene.add(mosqueLight3);
+
+let lightsOn = true;
+function setLights(on) {
+  mosqueLight1.intensity = on ? 2.5 : 0;
+  mosqueLight2.intensity = on ? 1.8 : 0;
+  mosqueLight3.intensity = on ? 1.8 : 0;
+  winMat.emissiveIntensity = on ? .6 : 0;
+}
+setLights(true);
+
+/* ══════════════════════════════════════
+   Helper: arch (pointed / ogee)
+   ══════════════════════════════════════ */
+function makeArch(w, h, depth, color) {
+  const shape = new THREE.Shape();
+  const hw = w / 2;
+  shape.moveTo(-hw, 0);
+  shape.lineTo(-hw, h * .55);
+  shape.quadraticCurveTo(-hw, h, 0, h);
+  shape.quadraticCurveTo( hw, h, hw, h * .55);
+  shape.lineTo(hw, 0);
+  shape.lineTo(-hw, 0);
+
+  const extSettings = { depth, bevelEnabled: false };
+  const geo = new THREE.ExtrudeGeometry(shape, extSettings);
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: .6, metalness: .1 });
+  return new THREE.Mesh(geo, mat);
+}
+
+/* ══════════════════════════════════════
+   MOSQUE
+   ══════════════════════════════════════ */
+const mosque = new THREE.Group();
+scene.add(mosque);
+
+/* -- Main body -- */
+const bodyMat = new THREE.MeshStandardMaterial({ color: 0xd4b896, roughness: .7 });
+const bodyGeo = new THREE.BoxGeometry(8, 5, 6);
+const body = new THREE.Mesh(bodyGeo, bodyMat);
+body.position.set(0, 2.5, 0);
+body.castShadow = true; body.receiveShadow = true;
+mosque.add(body);
+
+/* -- Central dome -- */
+const domeMat = new THREE.MeshStandardMaterial({ color: 0x2e7d5e, roughness: .4, metalness: .3 });
+const domeGeo = new THREE.SphereGeometry(2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+const dome = new THREE.Mesh(domeGeo, domeMat);
+dome.position.set(0, 5, 0);
+dome.castShadow = true;
+mosque.add(dome);
+
+/* -- Small side domes -- */
+[-2.6, 2.6].forEach(x => {
+  const sd = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+    domeMat
+  );
+  sd.position.set(x, 5.2, 0);
+  mosque.add(sd);
+});
+
+/* -- Minarets (4 corners) -- */
+const minaretMat = new THREE.MeshStandardMaterial({ color: 0xc8a87a, roughness: .6 });
+[[-3.8, -2.4], [3.8, -2.4], [-3.8, 2.4], [3.8, 2.4]].forEach(([x, z]) => {
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.28, .32, 9, 12), minaretMat);
+  shaft.position.set(x, 4.5, z);
+  shaft.castShadow = true;
+  mosque.add(shaft);
+
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(.4, 1.2, 12), domeMat);
+  cap.position.set(x, 9.3, z);
+  mosque.add(cap);
+
+  /* crescent on minaret */
+  const cresShape = new THREE.Shape();
+  cresShape.absarc(0, 0, .22, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(.08, 0, .16, 0, Math.PI * 2, true);
+  cresShape.holes.push(hole);
+  const cresGeo = new THREE.ShapeGeometry(cresShape);
+  const cresMat = new THREE.MeshStandardMaterial({ color: 0xffd700, side: THREE.DoubleSide });
+  const cres = new THREE.Mesh(cresGeo, cresMat);
+  cres.position.set(x, 10.2, z);
+  mosque.add(cres);
+});
+
+/* -- Central crescent -- */
+const mainCresShape = new THREE.Shape();
+mainCresShape.absarc(0, 0, .45, 0, Math.PI * 2, false);
+const mainHole = new THREE.Path();
+mainHole.absarc(.15, 0, .32, 0, Math.PI * 2, true);
+mainCresShape.holes.push(mainHole);
+const mainCres = new THREE.Mesh(
+  new THREE.ShapeGeometry(mainCresShape),
+  new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: .4, side: THREE.DoubleSide })
+);
+mainCres.position.set(0, 7.5, 0);
+mosque.add(mainCres);
+
+/* -- Front arches -- */
+[-2.5, 0, 2.5].forEach(x => {
+  const arch = makeArch(1.6, 2.2, .35, 0xb89870);
+  arch.position.set(x - .8, 0, 3.18);
+  mosque.add(arch);
+});
+
+/* -- Decorative windows -- */
+const winMat = new THREE.MeshStandardMaterial({
+  color: 0xffd700, emissive: 0xffd700, emissiveIntensity: .6, transparent: true, opacity: .8
+});
+[-2, 0, 2].forEach(x => {
+  const win = new THREE.Mesh(new THREE.CircleGeometry(.35, 8), winMat);
+  win.position.set(x, 3.5, 3.02);
+  mosque.add(win);
+});
+
+mosque.position.y = 0;
+
+/* ══════════════════════════════════════
+   MOON
+   ══════════════════════════════════════ */
+const moonMat = new THREE.MeshStandardMaterial({ color: 0xfff5c0, emissive: 0xfff0a0, emissiveIntensity: .5 });
+const moon = new THREE.Mesh(new THREE.SphereGeometry(1.4, 32, 32), moonMat);
+moon.position.set(-10, 16, -18);
+scene.add(moon);
+
+/* ══════════════════════════════════════
+   PALM TREES
+   ══════════════════════════════════════ */
+function makePalm(x, z) {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(.15, .25, 4.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0x8b5e3c, roughness: .9 })
+  );
+  trunk.position.y = 2.25;
+  g.add(trunk);
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x2d7a2d, roughness: .8, side: THREE.DoubleSide });
+  for (let i = 0; i < 7; i++) {
+    const leaf = new THREE.Mesh(new THREE.PlaneGeometry(.3, 2), leafMat);
+    leaf.position.set(0, 4.6, 0);
+    leaf.rotation.y = (i / 7) * Math.PI * 2;
+    leaf.rotation.z = .7;
+    g.add(leaf);
+  }
+  g.position.set(x, 0, z);
+  scene.add(g);
+}
+makePalm(-7, 2); makePalm(7, 2); makePalm(-9, -1); makePalm(9, -1);
+
+/* ══════════════════════════════════════
+   FIREWORKS
+   ══════════════════════════════════════ */
+const FW_COLORS = [0xff4444, 0xffaa00, 0x44ff88, 0x44aaff, 0xff44ff, 0xffff44, 0xffffff];
+const fireworks = [];
+let fireworksOn = false;
+
+function spawnFirework() {
+  const color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+  const count  = 120;
+  const geo    = new THREE.BufferGeometry();
+  const pos    = new Float32Array(count * 3);
+  const vel    = [];
+  const cx = (Math.random() - .5) * 14;
+  const cy = 10 + Math.random() * 6;
+  const cz = (Math.random() - .5) * 6 - 4;
+  for (let i = 0; i < count; i++) {
+    pos[i * 3]     = cx;
+    pos[i * 3 + 1] = cy;
+    pos[i * 3 + 2] = cz;
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2 * Math.random() - 1);
+    const sp    = .04 + Math.random() * .12;
+    vel.push(
+      Math.sin(phi) * Math.cos(theta) * sp,
+      Math.cos(phi) * sp,
+      Math.sin(phi) * Math.sin(theta) * sp
+    );
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color, size: .22, sizeAttenuation: true, transparent: true, opacity: 1 });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  fireworks.push({ pts, vel, life: 1 });
+}
+
+function updateFireworks() {
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const fw = fireworks[i];
+    fw.life -= .012;
+    fw.pts.material.opacity = Math.max(0, fw.life);
+    const pos = fw.pts.geometry.attributes.position.array;
+    for (let j = 0; j < pos.length / 3; j++) {
+      pos[j * 3]     += fw.vel[j * 3];
+      pos[j * 3 + 1] += fw.vel[j * 3 + 1] - .002;
+      pos[j * 3 + 2] += fw.vel[j * 3 + 2];
+    }
+    fw.pts.geometry.attributes.position.needsUpdate = true;
+    if (fw.life <= 0) { scene.remove(fw.pts); fireworks.splice(i, 1); }
+  }
+}
+
+let fwTimer = 0;
+function maybeSpawnFirework(dt) {
+  if (!fireworksOn) return;
+  fwTimer += dt;
+  if (fwTimer > .5) { spawnFirework(); fwTimer = 0; }
+}
+
+/* ══════════════════════════════════════
+   STAR TWINKLE
+   ══════════════════════════════════════ */
+let twinkleOn = false;
+function updateStars(t) {
+  if (!twinkleOn) return;
+  starMat.size = .13 + .09 * Math.sin(t * 2.5);
+}
+
+/* ══════════════════════════════════════
+   ANIMATION LOOP
+   ══════════════════════════════════════ */
+const clock = new THREE.Clock();
+let prevTime = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t  = clock.getElapsedTime();
+  const dt = t - prevTime;
+  prevTime = t;
+
+  /* gentle camera orbit */
+  camera.position.x = Math.sin(t * .06) * 22;
+  camera.position.z = Math.cos(t * .06) * 22;
+  camera.lookAt(0, 4, 0);
+
+  /* moon bob */
+  moon.position.y = 16 + Math.sin(t * .3) * .4;
+
+  /* crescent slow spin */
+  mainCres.rotation.z = Math.sin(t * .4) * .15;
+
+  /* star twinkle */
+  updateStars(t);
+
+  /* fireworks */
+  maybeSpawnFirework(dt);
+  updateFireworks();
+
+  renderer.render(scene, camera);
+}
+
+/* ══════════════════════════════════════
+   CONTROLS
+   ══════════════════════════════════════ */
+function toggleFireworks() {
+  fireworksOn = !fireworksOn;
+  const btn = document.getElementById('btnFire');
+  btn.classList.toggle('on',  fireworksOn);
+  btn.classList.toggle('off', !fireworksOn);
+}
+
+function toggleStars() {
+  twinkleOn = !twinkleOn;
+  if (!twinkleOn) starMat.size = .18;
+  const btn = document.getElementById('btnStars');
+  btn.classList.toggle('on',  twinkleOn);
+  btn.classList.toggle('off', !twinkleOn);
+}
+
+function toggleLights() {
+  lightsOn = !lightsOn;
+  setLights(lightsOn);
+  const btn = document.getElementById('btnLights');
+  btn.classList.toggle('on',  lightsOn);
+  btn.classList.toggle('off', !lightsOn);
+}
+
+function launchAll() {
+  if (!fireworksOn) toggleFireworks();
+  if (!twinkleOn)   toggleStars();
+  if (!lightsOn)    toggleLights();
+  const btn = document.getElementById('btnAll');
+  btn.classList.add('on'); btn.classList.remove('off');
+}
+
+/* ══════════════════════════════════════
+   RESIZE
+   ══════════════════════════════════════ */
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
+
+/* ══════════════════════════════════════
+   BOOT
+   ══════════════════════════════════════ */
+window.addEventListener('load', () => {
+  animate();
+  setTimeout(() => {
+    const loader = document.getElementById('loader');
+    loader.classList.add('hidden');
+    setTimeout(() => loader.style.display = 'none', 700);
+  }, 900);
+});
+</script>
+</body>
+</html>
