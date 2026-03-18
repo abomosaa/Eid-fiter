@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>عيد الفطر المبارك — عبدالله العديني</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#020810;}
+canvas#c{position:fixed;top:0;left:0;width:100%;height:100%;display:block;}
+
+/* ── TOP GREETING ── */
+#topGreet{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 16px 30px;
+  background:linear-gradient(to bottom,rgba(2,8,16,0.92) 55%,transparent);
+  pointer-events:none;
+}
+.greet-main{
+  font-family:'Amiri',serif;
+  font-size:clamp(1.7rem,5.5vw,3.2rem);
+  color:#e8c040;text-align:center;line-height:1.3;
+  text-shadow:0 0 35px rgba(232,192,64,0.8),0 2px 10px rgba(0,0,0,0.9);
+  animation:fadeSlideDown .9s cubic-bezier(.22,1,.36,1) both;
+  width:100%;
+}
+.greet-sub{
+  font-family:'Tajawal',sans-serif;
+  font-size:clamp(0.92rem,2.8vw,1.3rem);
+  color:rgba(255,243,196,0.88);text-align:center;
+  margin-top:6px;
+  text-shadow:0 1px 8px rgba(0,0,0,0.95);
+  animation:fadeSlideDown .9s .15s cubic-bezier(.22,1,.36,1) both;
+  width:100%;
+}
+.greet-from{
+  font-family:'Tajawal',sans-serif;
+  font-size:clamp(1rem,3vw,1.35rem);
+  font-weight:700;
+  color:#e8c040;
+  margin-top:8px;
+  letter-spacing:0.04em;
+  text-align:right;
+  width:100%;
+  padding-right:8px;
+  text-shadow:0 0 20px rgba(232,192,64,0.6), 0 2px 6px rgba(0,0,0,0.9);
+  animation:fadeSlideDown .9s .3s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes fadeSlideDown{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── BOTTOM CONTROLS ── */
+#hud{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  padding:10px 16px 24px;
+  background:linear-gradient(to top,rgba(2,8,16,0.92) 55%,transparent);
+  display:flex;justify-content:center;
+  animation:fadeUp .8s .5s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.controls{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;}
+.ctrl-btn{
+  padding:10px 21px;border-radius:50px;
+  border:1.5px solid rgba(232,192,64,0.35);
+  background:rgba(4,12,28,0.85);backdrop-filter:blur(10px);
+  color:rgba(232,192,64,0.6);
+  font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700;
+  cursor:pointer;transition:background .2s, color .2s, border-color .2s, box-shadow .2s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+/* OFF = خافت */
+.ctrl-btn.off{
+  background:rgba(4,12,28,0.85);
+  border-color:rgba(232,192,64,0.25);
+  color:rgba(232,192,64,0.45);
+  box-shadow:none;
+}
+/* ON = ذهبي مملوء واضح */
+.ctrl-btn.on{
+  background:linear-gradient(135deg,#e8c040,#c8890a);
+  border-color:#e8c040;
+  color:#0a1628;
+  box-shadow:0 0 20px rgba(232,192,64,0.6), 0 2px 8px rgba(0,0,0,0.5);
+}
+.ctrl-btn:active{transform:scale(0.93);}
+
+/* ── LOADER ── */
+#loader{
+  position:fixed;inset:0;z-index:200;background:#020810;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  transition:opacity .8s;
+}
+#loader.hide{opacity:0;pointer-events:none;}
+.spinner{width:48px;height:48px;border-radius:50%;border:3px solid rgba(232,192,64,0.18);border-top-color:#e8c040;animation:spin .85s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-txt{font-family:'Tajawal',sans-serif;color:rgba(232,192,64,0.65);font-size:1rem;}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="spinner"></div>
+  <div class="load-txt">جاري التحميل…</div>
+</div>
+
+<!-- TOP GREETING (always visible, on top) -->
+<div id="topGreet">
+  <div class="greet-main">🌙 عيد الفطر المبارك 🌙</div>
+  <div class="greet-sub">كل عام وأنتم بخير وعافية &nbsp;✨&nbsp; تقبّل الله منا ومنكم صالح الأعمال</div>
+  <div class="greet-from">— عبدالله العديني</div>
+</div>
+
+<!-- CANVAS -->
+<canvas id="c"></canvas>
+
+<!-- BOTTOM CONTROLS -->
+<div id="hud">
+  <div class="controls">
+    <button class="ctrl-btn off" id="btnFire"   onclick="toggleFireworks()">🎆 ألعاب نارية</button>
+    <button class="ctrl-btn off" id="btnStars"  onclick="toggleStars()">✨ تلألؤ النجوم</button>
+    <button class="ctrl-btn on"  id="btnLights" onclick="toggleLights()">🕌 إضاءة المسجد</button>
+    <button class="ctrl-btn off" id="btnAll"    onclick="launchAll()">🎉 احتفال كامل</button>
+  </div>
+</div>
+
+<script>
+// Load Three.js then init
+const s=document.createElement('script');
+s.src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+s.onload=initScene;
+document.head.appendChild(s);
+
+let scene,camera,renderer,clock;
+let moon,moonGlow,starsGroup,lanternGroup;
+let fireworkParticles=[];
+let pointLights=[],domeMat;
+let cameraAngle=0;
+const CAM_Y=10, CAM_R=38;  // far back so mosque fits below text
+
+const C={gold:0xe8c040,goldDark:0xc8890a,mosque:0xc8a96e,mosqueShad:0x8a6c3a,dome:0x1e6875,moonCol:0xfff8d0};
+
+function initScene(){
+  const T=window.THREE;
+  const cv=document.getElementById('c');
+
+  renderer=new T.WebGLRenderer({canvas:cv,antialias:false,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.shadowMap.enabled=false;
+  renderer.toneMapping=THREE.NoToneMapping;
+  renderer.outputEncoding=THREE.LinearEncoding;
+
+  scene=new T.Scene();
+  scene.background=new T.Color(0x020810);
+  scene.fog=new T.FogExp2(0x020c1a,0.013);
+  clock=new T.Clock();
+
+  camera=new T.PerspectiveCamera(56,innerWidth/innerHeight,0.1,400);
+  camera.position.set(0,CAM_Y,CAM_R);
+  camera.lookAt(0,5,0);
+
+  buildSky(T); buildLights(T); buildStars(T);
+  buildMosque(T); buildMoon(T); buildLanterns(T); buildGround(T);
+
+  // Horizontal drag only (no vertical — camera stays fixed)
+  let drag=false,lx=0,ltx=0;
+  cv.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{if(drag){cameraAngle+=(e.clientX-lx)*0.007;lx=e.clientX;}});
+  cv.addEventListener('touchstart',e=>{ltx=e.touches[0].clientX;},{passive:true});
+  cv.addEventListener('touchmove',e=>{cameraAngle+=(e.touches[0].clientX-ltx)*0.011;ltx=e.touches[0].clientX;e.preventDefault();},{passive:false});
+
+  window.addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight);
+  });
+
+  animate();
+  setTimeout(()=>document.getElementById('loader').classList.add('hide'),500);
+  setTimeout(()=>fireworks(5),700);
+}
+
+function buildSky(T){
+  const geo=new T.SphereGeometry(180,14,14);
+  const mat=new T.ShaderMaterial({side:T.BackSide,
+    uniforms:{top:{value:new T.Color(0x010407)},bot:{value:new T.Color(0x091a30)}},
+    vertexShader:`varying float h;void main(){h=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`uniform vec3 top,bot;varying float h;void main(){gl_FragColor=vec4(mix(bot,top,smoothstep(-0.05,0.55,h)),1.);}`
+  });
+  scene.add(new T.Mesh(geo,mat));
+}
+
+let ambLight, dirLight;
+function buildLights(T){
+  ambLight=new T.AmbientLight(0x1a2840,1.1); scene.add(ambLight);
+  dirLight=new T.DirectionalLight(0xfff0cc,0.7);
+  dirLight.position.set(8,24,10); scene.add(dirLight);
+  [[0,10,0],[5,4,0],[-5,4,0]].forEach(p=>{
+    const pl=new T.PointLight(C.gold,1.9,22);
+    pl.position.set(...p);scene.add(pl);pointLights.push(pl);
+  });
+}
+
+function buildStars(T){
+  starsGroup = new T.Group();
+
+  // ── إنشاء texture نجمة بيضاء مع شعاع (spike) ──
+  function makeStarTexture(spikes){
+    const size = 128;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const ctx = cv.getContext('2d');
+    const cx = size/2, cy = size/2;
+
+    // هالة بيضاء ناصعة
+    const glow = ctx.createRadialGradient(cx,cy,0, cx,cy, size*0.5);
+    glow.addColorStop(0,   'rgba(255,255,255,1)');
+    glow.addColorStop(0.08,'rgba(255,255,255,1)');
+    glow.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+    glow.addColorStop(0.4, 'rgba(255,255,255,0.3)');
+    glow.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0,0,size,size);
+
+    // شعاعات بيضاء
+    for(let s=0; s<spikes; s++){
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate((s/spikes)*Math.PI*2);
+      const sg = ctx.createLinearGradient(0,0, 0,-size*0.5);
+      sg.addColorStop(0,   'rgba(255,255,255,1)');
+      sg.addColorStop(0.25,'rgba(255,255,255,0.7)');
+      sg.addColorStop(0.6, 'rgba(255,255,255,0.2)');
+      sg.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.moveTo(-1.5, 0);
+      ctx.lineTo(0, -size*0.5);
+      ctx.lineTo(1.5, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // مركز ساطع جداً
+    const core = ctx.createRadialGradient(cx,cy,0, cx,cy,size*0.12);
+    core.addColorStop(0,  'rgba(255,255,255,1)');
+    core.addColorStop(0.5,'rgba(255,255,255,0.9)');
+    core.addColorStop(1,  'rgba(255,255,255,0)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(cx,cy,size*0.12,0,Math.PI*2); ctx.fill();
+
+    return new T.CanvasTexture(cv);
+  }
+
+  const tex4 = makeStarTexture(4); // 4 شعاعات للنجوم الكبيرة
+  const tex2 = makeStarTexture(2); // 2 شعاعات للنجوم المتوسطة
+  const texDot = makeStarTexture(0); // نقطة فقط للصغيرة
+
+  // طبقة 1: نجوم كبيرة مع 4 شعاعات (60 نجمة)
+  const N1=60, geo1=new T.BufferGeometry();
+  const pos1=new Float32Array(N1*3);
+  for(let i=0;i<N1;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=50+Math.random()*40;
+    pos1[i*3]=r*Math.sin(ph)*Math.cos(th);
+    pos1[i*3+1]=r*Math.abs(Math.cos(ph))+8;
+    pos1[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+  }
+  geo1.setAttribute('position',new T.BufferAttribute(pos1,3));
+  const mat1=new T.PointsMaterial({
+    size:12.0, map:tex4, transparent:true, opacity:1.0,
+    sizeAttenuation:true, depthWrite:false, blending:T.AdditiveBlending
+  });
+  starsGroup.add(new T.Points(geo1,mat1));
+
+  // طبقة 2: نجوم متوسطة (120 نجمة)
+  const N2=120, geo2=new T.BufferGeometry();
+  const pos2=new Float32Array(N2*3);
+  for(let i=0;i<N2;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=55+Math.random()*45;
+    pos2[i*3]=r*Math.sin(ph)*Math.cos(th);
+    pos2[i*3+1]=r*Math.abs(Math.cos(ph))+5;
+    pos2[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+  }
+  geo2.setAttribute('position',new T.BufferAttribute(pos2,3));
+  const mat2=new T.PointsMaterial({
+    size:6.0, map:tex2, transparent:true, opacity:1.0,
+    sizeAttenuation:true, depthWrite:false, blending:T.AdditiveBlending
+  });
+  starsGroup.add(new T.Points(geo2,mat2));
+
+  // طبقة 3: نجوم صغيرة (400 نجمة)
+  const N3=400, geo3=new T.BufferGeometry();
+  const pos3=new Float32Array(N3*3), col3=new Float32Array(N3*3);
+  for(let i=0;i<N3;i++){
+    const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), r=50+Math.random()*60;
+    pos3[i*3]=r*Math.sin(ph)*Math.cos(th);
+    pos3[i*3+1]=r*Math.abs(Math.cos(ph))+4;
+    pos3[i*3+2]=r*Math.sin(ph)*Math.sin(th);
+    const rnd=Math.random();
+    if(rnd<0.8){ col3[i*3]=1;col3[i*3+1]=1;col3[i*3+2]=1; }          // أبيض ناصع
+    else if(rnd<0.9){ col3[i*3]=0.9;col3[i*3+1]=0.95;col3[i*3+2]=1; } // مزرق خفيف جداً
+    else { col3[i*3]=1;col3[i*3+1]=0.98;col3[i*3+2]=0.9; }            // دافئ خفيف جداً
+  }
+  geo3.setAttribute('position',new T.BufferAttribute(pos3,3));
+  geo3.setAttribute('color',new T.BufferAttribute(col3,3));
+  const mat3=new T.PointsMaterial({
+    size:2.2, map:texDot, vertexColors:true, transparent:true, opacity:1.0,
+    sizeAttenuation:true, depthWrite:false, blending:T.AdditiveBlending
+  });
+  starsGroup.add(new T.Points(geo3,mat3));
+
+  scene.add(starsGroup);
+}
+
+// helper
+function mk(T,geo,mat,x=0,y=0,z=0){const m=new T.Mesh(geo,mat);m.position.set(x,y,z);return m;}
+
+function buildMosque(T){
+  const root=new T.Group();
+  const bM=new T.MeshLambertMaterial({color:C.mosque});
+  const aM=new T.MeshLambertMaterial({color:C.mosqueShad});
+  domeMat=new T.MeshLambertMaterial({color:C.dome,emissive:new T.Color(0x0a3d44),emissiveIntensity:0.38});
+  const gM=new T.MeshLambertMaterial({color:C.gold,emissive:new T.Color(C.goldDark),emissiveIntensity:0.5});
+  const wM=new T.MeshBasicMaterial({color:0xffdd88});
+
+  // body
+  root.add(mk(T,new T.BoxGeometry(14,6,10),bM,0,3,0));
+  // front arches
+  for(let i=-2;i<=2;i++){
+    root.add(mk(T,new T.BoxGeometry(1.5,2.8,0.36),aM,i*2.4,2,5.2));
+    root.add(mk(T,new T.PlaneGeometry(0.85,1.65),wM,i*2.4,2,5.08));
+  }
+  // wings
+  [-9,9].forEach(x=>{
+    root.add(mk(T,new T.BoxGeometry(4,4,8),bM,x,2,0));
+    for(let j=-1;j<=1;j++) root.add(mk(T,new T.PlaneGeometry(0.65,1.2),wM,x,1.8,j*2.3+4.0));
+  });
+  // domes
+  root.add(dome(T,3.2,0,7.2,0,domeMat,gM));
+  [[-9,3.7],[9,3.7]].forEach(([x,y])=>root.add(dome(T,1.85,x,y,0,domeMat,gM)));
+  // minarets
+  [[-6.8,4.8],[6.8,4.8],[-6.8,-4.8],[6.8,-4.8]].forEach(([x,z])=>root.add(minaret(T,x,z,bM,aM,gM,wM)));
+  // steps
+  [0,0.27,0.52].forEach((h,i)=>root.add(mk(T,new T.BoxGeometry(15.5-i,0.27,1+i*0.33),aM,0,h,5.45+i*0.27)));
+  // courtyard border
+  root.add(mk(T,new T.BoxGeometry(22.2,0.18,14.2),new T.MeshLambertMaterial({color:C.goldDark}),0,-0.12,0));
+  root.add(mk(T,new T.BoxGeometry(22,0.12,14),new T.MeshLambertMaterial({color:0xd4b483}),0,-0.06,0));
+
+  root.position.set(0,0,2);
+  scene.add(root);
+}
+
+function dome(T,r,x,y,z,dM,gM){
+  const g=new T.Group();
+  g.add(mk(T,new T.SphereGeometry(r,18,10,0,Math.PI*2,0,Math.PI/2),dM));
+  g.add(mk(T,new T.CylinderGeometry(r*0.66,r*0.66,r*0.26,18),dM,0,-r*0.13,0));
+  g.add(mk(T,new T.CylinderGeometry(0.05,0.1,r*0.3,8),gM,0,r*0.86,0));
+  const cr=new T.Mesh(new T.TorusGeometry(1,0.15,6,22,Math.PI*1.3),gM);
+  cr.scale.setScalar(r*0.11);cr.position.y=r*1.08;g.add(cr);
+  g.position.set(x,y,z);return g;
+}
+
+function minaret(T,x,z,bM,aM,gM,wM){
+  const g=new T.Group();
+  g.add(mk(T,new T.CylinderGeometry(0.5,0.65,14,11),bM,0,7,0));
+  g.add(mk(T,new T.CylinderGeometry(0.98,0.58,0.26,11),aM,0,11,0));
+  g.add(mk(T,new T.CylinderGeometry(0.27,0.5,3.2,9),bM,0,12.8,0));
+  g.add(mk(T,new T.ConeGeometry(0.44,2.2,9),gM,0,15.6,0));
+  const cr=new T.Mesh(new T.TorusGeometry(1,0.15,5,18,Math.PI*1.3),gM);
+  cr.scale.setScalar(0.21);cr.position.y=16.85;g.add(cr);
+  [4,7.4,10.4].forEach(h=>g.add(mk(T,new T.PlaneGeometry(0.36,0.6),wM,0,h,0.52)));
+  g.position.set(x,0,z);return g;
+}
+
+function buildMoon(T){
+  moonGlow=new T.Group();
+  const mat=new T.MeshLambertMaterial({color:C.moonCol,emissive:new T.Color(0xffe060),emissiveIntensity:0.5});
+  moon=new T.Mesh(new T.SphereGeometry(4.2,26,26),mat);
+  moonGlow.add(moon);
+  // crescent shadow
+  const shd=new T.Mesh(new T.SphereGeometry(3.9,22,22),new T.MeshBasicMaterial({color:0x010407}));
+  shd.position.set(2.4,0.7,0.6);moonGlow.add(shd);
+  // halo
+  for(let i=1;i<=3;i++){
+    const r=new T.Mesh(new T.RingGeometry(4.2+i*1.3,4.2+i*1.3+0.55,30),
+      new T.MeshBasicMaterial({color:0xffdd55,transparent:true,opacity:0.055/i,side:T.DoubleSide}));
+    moonGlow.add(r);
+  }
+  moonGlow.position.set(20,26,-28);scene.add(moonGlow);
+  const ml=new T.PointLight(0xfff0cc,2.5,130);ml.position.copy(moonGlow.position);scene.add(ml);
+}
+
+function buildLanterns(T){
+  lanternGroup=new T.Group();
+  const lM=new T.MeshLambertMaterial({color:0xcc3311,emissive:new T.Color(0xff3300),emissiveIntensity:0.7});
+  const glM=new T.MeshBasicMaterial({color:0xffaa33,transparent:true,opacity:0.5});
+  const wM=new T.MeshBasicMaterial({color:C.gold});
+  [[-5,8,-2],[5,8,-2],[0,9,5],[-8,7,0],[8,7,0]].forEach(([x,y,z],i)=>{
+    const g=new T.Group();
+    g.add(mk(T,new T.CylinderGeometry(0.16,0.16,0.52,8),lM));
+    g.add(mk(T,new T.SphereGeometry(0.22,9,9),glM));
+    g.add(mk(T,new T.CylinderGeometry(0.016,0.016,1.1,4),wM,0,0.82,0));
+    const pl=new T.PointLight(0xff7700,0.9,5);pl.position.set(x,y-0.4,z);scene.add(pl);
+    g.userData={light:pl,phase:i*1.3};g.position.set(x,y,z);lanternGroup.add(g);
+  });
+  scene.add(lanternGroup);
+}
+
+function buildGround(T){
+  const gnd=new T.Mesh(new T.PlaneGeometry(200,200),new T.MeshLambertMaterial({color:0x0d1810}));
+  gnd.rotation.x=-Math.PI/2;
+  gnd.position.set(0,-0.2,0);
+  scene.add(gnd);
+}
+
+// ── FIREWORKS ──
+function fireworks(n=5){for(let i=0;i<n;i++)setTimeout(launchOne,i*370+Math.random()*160);}
+function launchOne(){
+  const T=window.THREE;
+  const cols=[0xff4444,0xffaa00,0x44ffcc,0x4499ff,0xff55ee,0xffff55,0xffffff,C.gold];
+  const col=cols[Math.floor(Math.random()*cols.length)];
+  const x=(Math.random()-.5)*36,y=13+Math.random()*12,z=(Math.random()-.5)*16-4;
+  const N=65,geo=new T.BufferGeometry();
+  const pos=new Float32Array(N*3),vel=[];
+  for(let i=0;i<N;i++){
+    pos[i*3]=x;pos[i*3+1]=y;pos[i*3+2]=z;
+    const th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1),sp=0.11+Math.random()*0.2;
+    vel.push(sp*Math.sin(ph)*Math.cos(th),sp*Math.sin(ph)*Math.sin(th)+0.03,sp*Math.cos(ph));
+  }
+  geo.setAttribute('position',new T.BufferAttribute(pos,3));
+  const mat=new T.PointsMaterial({color:col,size:0.3,transparent:true,opacity:1,sizeAttenuation:true});
+  const pts=new T.Points(geo,mat);scene.add(pts);
+  const fl=new T.PointLight(col,7,20);fl.position.set(x,y,z);scene.add(fl);
+  setTimeout(()=>scene.remove(fl),260);
+  fireworkParticles.push({mesh:pts,vel,life:1,mat,pos:geo.attributes.position.array});
+}
+
+// ── ANIMATE ──
+function animate(){
+  requestAnimationFrame(animate);
+  const t=clock.getElapsedTime();
+  cameraAngle+=0.0035;
+  camera.position.x=Math.sin(cameraAngle)*CAM_R;
+  camera.position.z=Math.cos(cameraAngle)*CAM_R;
+  camera.position.y=CAM_Y;
+  camera.lookAt(0,5,0);
+
+  if(moonGlow){moonGlow.position.y=26+Math.sin(t*0.27)*0.9;if(moon)moon.rotation.y=t*0.03;}
+
+  // Lanterns swing always, intensity only if lights on
+  lanternGroup&&lanternGroup.children.forEach(l=>{
+    l.rotation.z=Math.sin(t*0.73+l.userData.phase)*0.1;
+    if(l.userData.light && lightsOn)
+      l.userData.light.intensity=0.8+Math.sin(t*2+l.userData.phase)*0.32;
+  });
+
+  // Mosque point lights flicker — only when ON
+  if(lightsOn) pointLights.forEach((pl,i)=>pl.intensity=1.6+Math.sin(t*1.3+i)*0.28);
+  if(domeMat) domeMat.emissiveIntensity = lightsOn ? (0.38+Math.sin(t*0.6)*0.1) : 0.0;
+
+  // Stars — خافتة بالأساس، تلمع عند تشغيل الزر
+  if(starsGroup){
+    const m1=starsGroup.children[0].material;
+    const m2=starsGroup.children[1].material;
+    const m3=starsGroup.children[2].material;
+    if(starsOn){
+      // مشغّل: كبير ومضيء مع تلألؤ
+      m1.size    = 10.0 + Math.sin(t*0.9)*3.0;
+      m1.opacity = 0.95 + Math.sin(t*0.7)*0.05;
+      m2.size    = 5.0  + Math.sin(t*1.4+1)*1.5;
+      m2.opacity = 0.9  + Math.sin(t*1.6+2)*0.1;
+      m3.size    = 2.0  + Math.sin(t*1.9+0.8)*0.4;
+      m3.opacity = 0.85 + Math.sin(t*2.2+0.5)*0.15;
+    } else {
+      // مطفي: صغير وخافت بدون تلألؤ
+      m1.size=4.0;  m1.opacity=0.25;
+      m2.size=2.0;  m2.opacity=0.2;
+      m3.size=0.8;  m3.opacity=0.15;
+    }
+    m1.needsUpdate=true; m2.needsUpdate=true; m3.needsUpdate=true;
+  }
+
+  fireworkParticles=fireworkParticles.filter(fw=>{
+    fw.life-=0.016;fw.mat.opacity=fw.life;
+    const p=fw.pos,v=fw.vel;
+    for(let i=0;i<v.length/3;i++){v[i*3+1]-=0.003;p[i*3]+=v[i*3];p[i*3+1]+=v[i*3+1];p[i*3+2]+=v[i*3+2];}
+    fw.mesh.geometry.attributes.position.needsUpdate=true;
+    if(fw.life<=0){scene.remove(fw.mesh);return false;}return true;
+  });
+  renderer.render(scene,camera);
+}
+
+// ══════════════════════════════════════════
+//  BUTTONS — toggle on/off, same label, just style changes
+// ══════════════════════════════════════════
+
+// helper: set a toggle button ON or OFF visually only
+function setBtn(id, isOn){
+  const b = document.getElementById(id);
+  if(!b) return;
+  b.classList.toggle('on',  isOn);
+  b.classList.toggle('off', !isOn);
+}
+
+// ── ألعاب نارية (toggle: شغّال / مطفي) ──
+let fireOn = false;
+let fireInterval = null;
+function toggleFireworks(){
+  fireOn = !fireOn;
+  setBtn('btnFire', fireOn);
+  if(fireOn){
+    // اطلق موجة فورية ثم كل 4 ثواني
+    fireworks(5);
+    fireInterval = setInterval(()=>fireworks(4), 4000);
+  } else {
+    clearInterval(fireInterval);
+    fireInterval = null;
+  }
+}
+
+// ── تلألؤ النجوم (toggle) ──
+let starsOn = false;
+function toggleStars(){
+  starsOn = !starsOn;
+  setBtn('btnStars', starsOn);
+  if(!starsGroup) return;
+  const m1=starsGroup.children[0].material;
+  const m2=starsGroup.children[1].material;
+  const m3=starsGroup.children[2].material;
+  if(starsOn){
+    m1.size=10.0; m1.opacity=0.95;
+    m2.size=5.0;  m2.opacity=0.9;
+    m3.size=2.0;  m3.opacity=0.85;
+  } else {
+    m1.size=4.0;  m1.opacity=0.25;
+    m2.size=2.0;  m2.opacity=0.2;
+    m3.size=0.8;  m3.opacity=0.15;
+  }
+  m1.needsUpdate=true; m2.needsUpdate=true; m3.needsUpdate=true;
+}
+
+// ── إضاءة المسجد (toggle) ──
+let lightsOn = true;
+function toggleLights(){
+  lightsOn = !lightsOn;
+  setBtn('btnLights', lightsOn);
+  if(lightsOn){
+    if(ambLight){ ambLight.intensity=1.1; ambLight.color.set(0x1a2840); }
+    if(dirLight)  dirLight.intensity = 0.7;
+    pointLights.forEach(pl=>{ pl.visible=true; pl.intensity=1.6; });
+    if(domeMat) domeMat.emissiveIntensity = 0.38;
+    lanternGroup && lanternGroup.children.forEach(l=>{
+      if(l.userData.light){ l.userData.light.visible=true; l.userData.light.intensity=0.9; }
+    });
+  } else {
+    if(ambLight){ ambLight.intensity=0.08; ambLight.color.set(0x000408); }
+    if(dirLight)  dirLight.intensity = 0.03;
+    pointLights.forEach(pl=>{ pl.visible=false; pl.intensity=0; });
+    if(domeMat) domeMat.emissiveIntensity = 0;
+    lanternGroup && lanternGroup.children.forEach(l=>{
+      if(l.userData.light){ l.userData.light.visible=false; l.userData.light.intensity=0; }
+    });
+  }
+}
+
+// ── احتفال كامل: يشغّل الكل إذا مطفي، يطفي الكل إذا شغّال ──
+let celebOn = false;
+function launchAll(){
+  celebOn = !celebOn;
+  setBtn('btnAll', celebOn);
+
+  if(celebOn){
+    // شغّل الكل
+    if(!fireOn)   toggleFireworks();
+    if(!starsOn)  toggleStars();
+    if(!lightsOn) toggleLights();
+    // وميض درامي للإضاءة
+    let i=0;
+    const fl = setInterval(()=>{
+      if(!lightsOn){ clearInterval(fl); return; }
+      pointLights.forEach(pl => pl.intensity = (i%2===0) ? 6 : 1.6);
+      if(ambLight)  ambLight.intensity = (i%2===0) ? 2.5 : 1.1;
+      if(domeMat)   domeMat.emissiveIntensity = (i%2===0) ? 1.2 : 0.38;
+      if(++i > 12)  clearInterval(fl);
+    }, 180);
+  } else {
+    // أطفئ الكل
+    if(fireOn)   toggleFireworks();
+    if(starsOn)  toggleStars();
+    if(lightsOn) toggleLights();
+  }
+}
+</script>
+</body>
+</html>
