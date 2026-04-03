@@ -40,11 +40,11 @@ canvas#c{position:fixed;top:0;left:0;width:100%;height:100%;display:block;}
   font-size:clamp(1rem,3vw,1.35rem);
   font-weight:700;
   color:#e8c040;
-  margin-top:8px;
+  margin-top:4px;
   letter-spacing:0.04em;
   text-align:right;
-  width:100%;
-  padding-right:8px;
+  width:auto;
+  padding:0;
   text-shadow:0 0 20px rgba(232,192,64,0.6), 0 2px 6px rgba(0,0,0,0.9);
   animation:fadeSlideDown .9s .3s cubic-bezier(.22,1,.36,1) both;
 }
@@ -593,6 +593,26 @@ function launchAll(){
     if(lightsOn) toggleLights();
   }
 }
+
+// ── GREET-FROM POSITIONING ──
+function positionGreetFrom(){
+  var sub = document.querySelector('.greet-sub');
+  var from = document.querySelector('.greet-from');
+  var container = document.getElementById('topGreet');
+  if(!sub || !from || !container) return;
+  var cRect = container.getBoundingClientRect();
+  var sRect = sub.getBoundingClientRect();
+  from.style.position = 'absolute';
+  from.style.right = (cRect.right - sRect.right) + 'px';
+  from.style.left = 'auto';
+  from.style.top = (sRect.bottom - cRect.top) + 'px';
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', positionGreetFrom);
+} else {
+  positionGreetFrom();
+}
+window.addEventListener('resize', positionGreetFrom);
 </script>
 </body>
 </html>
